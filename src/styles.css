@@ -1,0 +1,39 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #f4f1ea;
+  --surface: #ffffff;
+  --text: #1c1a17;
+  --muted: #6f6a61;
+  --accent: #b3541e;
+}
+
+[data-theme='night'] {
+  --bg: #141311;
+  --surface: #1e1c19;
+  --text: #ece7dd;
+  --muted: #a09a8d;
+  --accent: #e08a3c;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+#root {
+  height: 100%;
+}
