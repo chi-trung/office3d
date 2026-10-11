@@ -33,6 +33,8 @@ const SCREEN_ON_EMISSIVE = 0.6; // day base; applyTheme rescales for night
 const SCREEN_OFF_EMISSIVE = 0.05;
 const SEED_STEP = 0.618; // R11: seed = (i * 0.618) % 1 stays in [0, 1)
 const MAX_PIXEL_RATIO = 2;
+const RESIZE_DEBOUNCE_MS = 100; // coalesce ResizeObserver bursts mid-layout
+const LABEL_MIN_ZOOM_PERCENT = 70; // 3D name labels hide below this zoom
 
 // Full teardown / dots rebuild: dispose nothing selectively.
 const NO_SKIP: ReadonlySet<THREE.Material> = new Set();
@@ -89,6 +91,7 @@ export class OfficeScene {
   private filter: TeamId | null = null;
   private lastZoom = -1; // first frame reports the initial percent
   private prevMs = 0;
+  private resizeTimer: number | null = null;
   private down: { x: number; y: number } | null = null;
   private disposed = false;
 
@@ -199,6 +202,7 @@ export class OfficeScene {
     this.syncEmptySlot(staff.length);
     this.rebuildDots();
     this.applyLooks();
+    this.syncLabels(this.rig.getPercent()); // new labels follow the zoom rule too
     if (screensChanged) {
       applyTheme(this.scene, this.hemi, this.dir, this.screens, this.theme);
     }
@@ -215,7 +219,19 @@ export class OfficeScene {
     this.mode = mode;
     this.rig.setViewMode(mode);
     this.dots.visible = mode === '2d';
-    for (const label of this.labels.values()) label.visible = mode === '3d';
+    // Spec Mục 7: 2D hides the 3D characters, showing floor dots instead.
+    this.worldGroup.visible = mode === '3d';
+    // Shadows are a 3D-only feature. Toggling shadowMap.enabled at runtime
+    // (three r186) requires a material recompile, otherwise the 2D→3D
+    // round-trip keeps stale shadow uniforms.
+    this.renderer.shadowMap.enabled = mode === '3d';
+    this.renderer.shadowMap.needsUpdate = true;
+    this.scene.traverse((obj) => {
+      if (!(obj instanceof THREE.Mesh)) return;
+      const list = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const material of list) material.needsUpdate = true;
+    });
+    this.syncLabels(this.rig.getPercent());
   }
 
   setTheme(theme: ThemeMode): void {
@@ -243,6 +259,8 @@ export class OfficeScene {
     canvas.removeEventListener('pointerdown', this.onPointerDown);
     canvas.removeEventListener('pointerup', this.onPointerUp);
     this.ro.disconnect();
+    if (this.resizeTimer !== null) window.clearTimeout(this.resizeTimer);
+    this.resizeTimer = null;
     this.rig.controls.dispose();
     releaseResources(this.scene, NO_SKIP); // palette dies with the scene
     this.renderer.dispose();
@@ -310,6 +328,12 @@ export class OfficeScene {
     this.scene.add(this.dots);
   }
 
+  // 3D: name labels show only at >=70% zoom; 2D keeps the dots-only layout.
+  private syncLabels(percent: number): void {
+    const visible = this.mode === '3d' && percent >= LABEL_MIN_ZOOM_PERCENT;
+    for (const label of this.labels.values()) label.visible = visible;
+  }
+
   // Opacity look per person: offline base, optionally dimmed by the filter.
   // Mirrors applyStatusLook's material walk without touching member.status.
   private applyLooks(): void {
@@ -349,8 +373,14 @@ export class OfficeScene {
     this.rig.ortho.updateProjectionMatrix();
   }
 
+  // Debounced so layout bursts mid-drag don't resize every frame; the final
+  // callback still applies the last size to both cameras.
   private readonly onResize = (): void => {
-    this.applySize();
+    if (this.resizeTimer !== null) window.clearTimeout(this.resizeTimer);
+    this.resizeTimer = window.setTimeout(() => {
+      this.resizeTimer = null;
+      this.applySize();
+    }, RESIZE_DEBOUNCE_MS);
   };
 
   // Click detection: a pick only fires when the pointer barely moved, so
@@ -365,7 +395,10 @@ export class OfficeScene {
     if (!down) return;
     if (Math.hypot(e.clientX - down.x, e.clientY - down.y) >= CLICK_SLOP_PX) return;
     const camera = this.mode === '3d' ? this.rig.persp : this.rig.ortho;
-    this.opts.onPick(pickStaff(e, this.renderer.domElement, camera, [this.worldGroup, this.dots]));
+    // three r186 raycasts invisible objects too, so only offer the visible
+    // layer: workstations in 3D, floor dots in 2D (worldGroup is hidden).
+    const pickables = this.mode === '3d' ? [this.worldGroup] : [this.dots];
+    this.opts.onPick(pickStaff(e, this.renderer.domElement, camera, pickables));
   };
 
   // R16: rig.update() carries the center() lerp plus idle controls.update();
@@ -382,10 +415,11 @@ export class OfficeScene {
     }
 
     this.rig.update();
-    this.renderer.render(this.scene, this.mode === '3d' ? this.rig.persp : this.rig.ortho);
 
     // Keep the store/BottomBar zoom readout in sync (initial load reports 51).
     const percent = this.rig.getPercent();
+    this.syncLabels(percent);
+    this.renderer.render(this.scene, this.mode === '3d' ? this.rig.persp : this.rig.ortho);
     if (percent !== this.lastZoom) {
       this.lastZoom = percent;
       this.opts.onZoom(percent);

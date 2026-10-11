@@ -1,7 +1,7 @@
 // Staff localStorage persistence helpers.
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { STORAGE_KEY, loadStaff, saveStaff } from '@/lib/storage';
+import { STORAGE_KEY, loadStaff, loadStaffDetailed, saveStaff } from '@/lib/storage';
 import { DEFAULT_STAFF } from '@/data/staff';
 import type { Staff } from '@/types';
 
@@ -78,5 +78,39 @@ describe('storage', () => {
     ];
     expect(saveStaff(custom)).toBe(true);
     expect(loadStaff([])).toEqual(custom);
+  });
+
+  it('detailed: empty store reports no storage failure', () => {
+    const result = loadStaffDetailed(DEFAULT_STAFF);
+    expect(result.staff).toEqual(DEFAULT_STAFF);
+    expect(result.storageBlocked).toBe(false);
+  });
+
+  it('detailed: wrong-shaped value reports no storage failure', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ id: 's1' }));
+    const result = loadStaffDetailed(DEFAULT_STAFF);
+    expect(result.staff).toEqual(DEFAULT_STAFF);
+    expect(result.storageBlocked).toBe(false);
+  });
+
+  it('detailed: stored list round-trips without a failure flag', () => {
+    expect(saveStaff(DEFAULT_STAFF)).toBe(true);
+    const result = loadStaffDetailed([]);
+    expect(result.staff).toEqual(DEFAULT_STAFF);
+    expect(result.storageBlocked).toBe(false);
+  });
+
+  it('detailed: throwing getItem reports a storage failure', () => {
+    const original = Storage.prototype.getItem;
+    Storage.prototype.getItem = () => {
+      throw new Error('private mode');
+    };
+    try {
+      const result = loadStaffDetailed(DEFAULT_STAFF);
+      expect(result.staff).toEqual(DEFAULT_STAFF);
+      expect(result.storageBlocked).toBe(true);
+    } finally {
+      Storage.prototype.getItem = original;
+    }
   });
 });

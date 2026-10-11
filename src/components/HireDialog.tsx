@@ -4,8 +4,10 @@
 
 import { useEffect, useState, type FormEvent, type MouseEvent, type ReactElement } from 'react';
 import { TEAMS } from '@/data/staff';
+import { newStaffId } from '@/lib/newId';
 import { validateStaffForm, type StaffFormErrors, type StaffFormValues } from '@/lib/staffForm';
 import { statusLabel } from '@/lib/status';
+import { MAX_STAFF } from '@/scene/world';
 import { useOfficeStore } from '@/store/officeStore';
 import type { CharacterSpec, Staff, StaffStatus, TeamId } from '@/types';
 
@@ -91,6 +93,10 @@ export default function HireDialog(): ReactElement {
         },
   );
   const [errors, setErrors] = useState<StaffFormErrors>({});
+  // Add-mode only: the room has MAX_STAFF seats, so a full room blocks the
+  // submit (edit mode is unaffected). Shown after a blocked attempt.
+  const [fullNotice, setFullNotice] = useState(false);
+  const atCapacity = editId === null && staff.length >= MAX_STAFF;
 
   // Capture-phase so Escape closes the dialog without StaffCard (which also
   // listens for Escape) clearing the selection.
@@ -122,6 +128,10 @@ export default function HireDialog(): ReactElement {
 
   const onSubmit = (e: FormEvent): void => {
     e.preventDefault();
+    if (atCapacity) {
+      setFullNotice(true);
+      return;
+    }
     const result = validateStaffForm(values);
     if (!result.ok) {
       setErrors(result.errors);
@@ -138,7 +148,7 @@ export default function HireDialog(): ReactElement {
       updateStaff(editId, common);
     } else {
       addStaff({
-        id: crypto.randomUUID(),
+        id: newStaffId(),
         ...common,
         look: randomLook(staff, values.teamId),
       });
@@ -230,6 +240,12 @@ export default function HireDialog(): ReactElement {
             />
             {errors.jiraUrl ? <span className="hire-error">{errors.jiraUrl}</span> : null}
           </div>
+          {fullNotice ? (
+            <p className="hire-notice" role="alert">
+              Phòng đã đủ {MAX_STAFF} chỗ — không thể tuyển thêm. Bạn vẫn có thể chỉnh sửa nhân
+              viên hiện có.
+            </p>
+          ) : null}
           <div className="hire-actions">
             <button type="button" className="btn" onClick={close}>
               Hủy

@@ -19,15 +19,28 @@ function isStaffArray(value: unknown): value is Staff[] {
 }
 
 export function loadStaff(fallback: Staff[]): Staff[] {
+  return loadStaffDetailed(fallback).staff;
+}
+
+export interface StaffLoadResult {
+  staff: Staff[];
+  storageBlocked: boolean;
+}
+
+// Same as loadStaff, but reports whether the fallback came from a storage
+// failure (blocked access in private mode, or an unreadable payload).
+// Callers use the flag for the spec's "báo nhẹ" notice; a merely empty or
+// wrong-shaped value is not a failure.
+export function loadStaffDetailed(fallback: Staff[]): StaffLoadResult {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) return fallback;
+    if (raw === null) return { staff: fallback, storageBlocked: false };
     const parsed: unknown = JSON.parse(raw);
-    if (!isStaffArray(parsed)) return fallback;
-    return parsed;
+    if (!isStaffArray(parsed)) return { staff: fallback, storageBlocked: false };
+    return { staff: parsed, storageBlocked: false };
   } catch {
-    // Broken JSON, private mode, or storage access errors.
-    return fallback;
+    // Blocked storage access or unreadable payload.
+    return { staff: fallback, storageBlocked: true };
   }
 }
 

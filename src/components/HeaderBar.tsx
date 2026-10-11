@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { computeStatusCounts } from '@/lib/status';
+import { MAX_STAFF } from '@/scene/world';
 import { useOfficeStore } from '@/store/officeStore';
 import type { ViewMode } from '@/types';
 
@@ -15,6 +16,7 @@ export default function HeaderBar(): ReactElement {
   const timerRef = useRef<number | null>(null);
 
   const counts = computeStatusCounts(staff);
+  const staffFull = staff.length >= MAX_STAFF;
 
   useEffect(
     () => () => {
@@ -61,6 +63,8 @@ export default function HeaderBar(): ReactElement {
       <button
         type="button"
         className="btn btn-primary"
+        disabled={staffFull}
+        title={staffFull ? `Phòng đã đủ ${MAX_STAFF} chỗ — không thể tuyển thêm` : undefined}
         onClick={() => {
           select(null);
           setHireOpen(true);
