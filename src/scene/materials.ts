@@ -39,6 +39,14 @@ export function createMaterials(): MaterialPalette {
   };
 }
 
+// Opaque dot material for the 2D layer, colored per team.
+export function dotMaterial(color: string): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.85,
+  });
+}
+
 // Transparent overlay material for team/zone highlights.
 export function zoneMaterial(color: string): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({

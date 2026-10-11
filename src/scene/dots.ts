@@ -5,15 +5,20 @@ import type { Staff } from '@/types';
 import { TEAMS } from '@/data/staff';
 import { zoneColorFor } from '@/lib/zone';
 import { makeNameLabel } from './nameLabel';
+import { dotMaterial } from './materials';
 
 const DOT_RADIUS = 0.5;
 const DOT_HEIGHT = 0.04;
 const LABEL_Y = 0.3;
 
+// One shared geometry for all dots.
+
 // In the top-down view the ortho camera looks straight down with a 0.001 tilt,
 // so screen "up" maps to this world direction — use it to clear the dot.
 const LABEL_SCREEN_UP = new THREE.Vector3(-Math.SQRT1_2, 0, -Math.SQRT1_2);
 const LABEL_CLEARANCE = 0.95; // label center offset, clears radius + half label
+
+const DOT_GEOMETRY = new THREE.CylinderGeometry(DOT_RADIUS, DOT_RADIUS, DOT_HEIGHT, 32);
 
 export function buildDots(
   staff: Staff[],
@@ -30,18 +35,12 @@ export function buildDots(
 
     let dotMat = dotMats.get(member.teamId);
     if (!dotMat) {
-      dotMat = new THREE.MeshStandardMaterial({
-        color: zoneColorFor(member.teamId, TEAMS),
-        roughness: 0.85,
-      });
+      dotMat = dotMaterial(zoneColorFor(member.teamId, TEAMS));
       dotMats.set(member.teamId, dotMat);
     }
 
     // Thin cylinder resting on the floor.
-    const dot = new THREE.Mesh(
-      new THREE.CylinderGeometry(DOT_RADIUS, DOT_RADIUS, DOT_HEIGHT, 32),
-      dotMat,
-    );
+    const dot = new THREE.Mesh(DOT_GEOMETRY, dotMat);
     dot.position.set(x, DOT_HEIGHT / 2, z);
     dot.userData.staffId = member.id; // pickable in 2D mode too
     group.add(dot);
