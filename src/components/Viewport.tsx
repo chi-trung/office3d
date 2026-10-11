@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactElement } from 'react';
 import { EMPTY_SLOT_ID } from '@/scene/raycaster';
+import { setScene } from '@/scene/instance';
 import { OfficeScene } from '@/scene/OfficeScene';
 import { useOfficeStore } from '@/store/officeStore';
 
@@ -30,6 +31,9 @@ export default function Viewport(): ReactElement {
       return;
     }
 
+    // Publish the live scene so overlay controls (BottomBar) can reach it.
+    setScene(scene);
+
     // The scene starts empty — apply whatever the store already holds
     // (matters on the StrictMode remount, when staff is already loaded).
     const initial = useOfficeStore.getState();
@@ -47,6 +51,7 @@ export default function Viewport(): ReactElement {
 
     return () => {
       unsubscribe();
+      setScene(null);
       scene?.dispose();
       scene = null;
     };

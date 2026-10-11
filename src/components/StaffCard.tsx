@@ -12,6 +12,7 @@ export default function StaffCard(): ReactElement | null {
   const selectedId = useOfficeStore((s) => s.selectedId);
   const staff = useOfficeStore((s) => s.staff);
   const select = useOfficeStore((s) => s.select);
+  const setHireOpen = useOfficeStore((s) => s.setHireOpen);
   const cardRef = useRef<HTMLDivElement>(null);
   const [imgFailed, setImgFailed] = useState(false);
 
@@ -74,6 +75,9 @@ export default function StaffCard(): ReactElement | null {
           {statusLabel(member.status)}
         </span>
         <div className="staff-card-actions">
+          <button type="button" className="btn" onClick={() => setHireOpen(true)}>
+            Sửa
+          </button>
           <button
             type="button"
             className="btn btn-primary"

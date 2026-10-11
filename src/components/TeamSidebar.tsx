@@ -28,6 +28,7 @@ export default function TeamSidebar(): ReactElement {
   const staff = useOfficeStore((s) => s.staff);
   const filterTeamId = useOfficeStore((s) => s.filterTeamId);
   const setFilter = useOfficeStore((s) => s.setFilter);
+  const resetStaff = useOfficeStore((s) => s.resetStaff);
   const [tab, setTab] = useState<'activity' | 'team'>('team');
 
   const counts = computeStatusCounts(staff);
@@ -109,6 +110,9 @@ export default function TeamSidebar(): ReactElement {
 
       <div className="sidebar-stats">
         Working {counts.working} • Idle {counts.idle} • Offline {counts.offline}
+        <button type="button" className="btn sidebar-reset" onClick={resetStaff}>
+          Reset demo
+        </button>
       </div>
 
       <div className="sidebar-icons" aria-hidden="true">
