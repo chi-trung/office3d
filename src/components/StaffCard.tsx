@@ -18,6 +18,12 @@ export default function StaffCard(): ReactElement | null {
   const member = staff.find((m) => m.id === selectedId) ?? null;
   const memberId = member?.id ?? null;
 
+  // Reset the avatar fallback when the selected member changes or closes,
+  // otherwise one failed image leaves every later member on initials.
+  useEffect(() => {
+    setImgFailed(false);
+  }, [memberId]);
+
   useEffect(() => {
     if (memberId === null) return;
     const onKey = (e: KeyboardEvent): void => {
