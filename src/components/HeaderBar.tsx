@@ -10,6 +10,7 @@ export default function HeaderBar(): ReactElement {
   const viewMode = useOfficeStore((s) => s.viewMode);
   const setViewMode = useOfficeStore((s) => s.setViewMode);
   const setHireOpen = useOfficeStore((s) => s.setHireOpen);
+  const select = useOfficeStore((s) => s.select);
   const [toast, setToast] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
 
@@ -57,7 +58,14 @@ export default function HeaderBar(): ReactElement {
         {modeButton('2d', '2D')}
         {modeButton('3d', '3D')}
       </div>
-      <button type="button" className="btn btn-primary" onClick={() => setHireOpen(true)}>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          select(null);
+          setHireOpen(true);
+        }}
+      >
         + Hire staff
       </button>
       <button type="button" className="btn" onClick={onShare}>

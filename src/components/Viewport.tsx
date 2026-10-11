@@ -18,7 +18,10 @@ export default function Viewport(): ReactElement {
       scene = new OfficeScene(host, {
         onPick: (id) => {
           const state = useOfficeStore.getState();
-          if (id === EMPTY_SLOT_ID) state.setHireOpen(true);
+          if (id === EMPTY_SLOT_ID) {
+            state.select(null);
+            state.setHireOpen(true);
+          }
           else state.select(id);
         },
         onZoom: (p) => {
