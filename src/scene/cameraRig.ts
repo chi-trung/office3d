@@ -5,7 +5,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { ViewMode } from '@/types';
 import { mapZoomToPercent, mapPercentToDistance } from '@/lib/zoom';
 
-export const DEFAULT_CAM_POS = new THREE.Vector3(26, 19.5, 26);
+// Same view direction as the spec's (26, 19.5, 26), scaled ×1.0956 so the
+// distance to CAM_TARGET is exactly 45 → 51% on page load (see R15:
+// verbatim 26/19.5/26 gives only 41.07 → 57%).
+export const DEFAULT_CAM_POS = new THREE.Vector3(28.4867, 21.2503, 28.4867);
 export const CAM_TARGET = new THREE.Vector3(0, 1.2, 0);
 
 // Top-down ortho half-height in world units; half-width follows the aspect.
